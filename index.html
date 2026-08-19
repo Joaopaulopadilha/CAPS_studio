@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CAPS Studio — Aprenda HTML, CSS e JS</title>
+<meta name="description" content="Editor estilo VS Code no navegador com preview ao vivo, para estudar e ensinar HTML, CSS, JavaScript e Python." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💻</text></svg>" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="titlebar">
+  <div class="titlebar-left">
+    <span class="brand">💻 CAPS Studio</span>
+    <span id="project-name" class="project-name"></span>
+  </div>
+  <div class="titlebar-actions">
+    <button class="tb-btn" id="btn-new-file" title="Novo arquivo">📄 Novo arquivo</button>
+    <button class="tb-btn" id="btn-new-folder" title="Nova pasta">📁 Nova pasta</button>
+    <span class="tb-sep"></span>
+    <button class="tb-btn" id="btn-open-folder" title="Abrir uma pasta do computador">📂 Abrir pasta</button>
+    <button class="tb-btn" id="btn-import" title="Importar pasta (qualquer navegador)">⬆️ Importar</button>
+    <button class="tb-btn" id="btn-export-zip" title="Baixar projeto como .zip">⬇️ Baixar .zip</button>
+    <span class="tb-sep"></span>
+    <button class="tb-btn" id="btn-reset" title="Começar um projeto novo (apaga o atual)">🆕 Novo projeto</button>
+    <span class="tb-sep"></span>
+    <button class="tb-btn" id="btn-toggle-terminal" title="Mostrar/ocultar terminal (Ctrl+`)">🖥️ Terminal</button>
+  </div>
+</div>
+
+<div id="app-body">
+  <div id="activitybar">
+    <button class="ab-icon active" title="Explorador">🗂️</button>
+  </div>
+
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span>Explorador</span>
+      <div class="sidebar-header-actions">
+        <button class="icon-btn" id="side-new-file" title="Novo arquivo">📄</button>
+        <button class="icon-btn" id="side-new-folder" title="Nova pasta">📁</button>
+      </div>
+    </div>
+    <div id="file-tree" class="file-tree"></div>
+  </aside>
+
+  <div class="resizer" id="resizer-1"></div>
+
+  <div id="workbench">
+    <div id="edit-area">
+      <section id="editor-pane">
+        <div id="tabs" class="tabs"></div>
+        <div id="monaco-container"></div>
+      </section>
+
+      <div class="resizer hidden" id="resizer-2"></div>
+
+      <section id="preview-pane" class="hidden">
+        <div class="preview-header">
+          <span>Visualização — <span id="preview-file-name"></span></span>
+          <div class="preview-actions">
+            <label class="auto-refresh">
+              <input type="checkbox" id="auto-refresh" checked />
+              auto
+            </label>
+            <button class="icon-btn" id="btn-refresh-preview" title="Atualizar preview">🔄</button>
+            <button class="icon-btn" id="btn-open-preview-tab" title="Abrir em nova aba">↗️</button>
+            <button class="icon-btn" id="btn-close-preview" title="Fechar visualização">✕</button>
+          </div>
+        </div>
+        <iframe id="preview-frame" title="Visualização da página" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"></iframe>
+      </section>
+    </div>
+
+    <div class="resizer resizer-horizontal hidden" id="resizer-3"></div>
+
+    <section id="terminal-panel" class="hidden">
+      <div class="preview-header">
+        <span>🖥️ Terminal</span>
+        <div class="preview-actions">
+          <button class="icon-btn" id="btn-run-python" title="Executar Python ativo (Ctrl+Enter)">▶️ Executar</button>
+          <button class="icon-btn hidden" id="btn-stop-python" title="Interromper">⏹️ Parar</button>
+          <button class="icon-btn" id="btn-clear-console" title="Limpar">🗑️</button>
+          <button class="icon-btn" id="btn-close-terminal" title="Fechar terminal">✕</button>
+        </div>
+      </div>
+      <div id="python-console"></div>
+    </section>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span id="status-mode">localStorage</span>
+  <span id="status-lang"></span>
+  <span id="status-msg"></span>
+</div>
+
+<input type="file" id="import-input" webkitdirectory directory multiple style="display:none" />
+
+<div id="modal-overlay" class="hidden">
+  <div id="modal-box">
+    <div id="modal-title"></div>
+    <input type="text" id="modal-input" />
+    <div id="modal-error"></div>
+    <div class="modal-actions">
+      <button id="modal-cancel">Cancelar</button>
+      <button id="modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="context-menu" class="hidden"></div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script src="js/vfs.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/preview.js"></script>
+<script src="js/localdisk.js"></script>
+<script src="js/zip.js"></script>
+<script src="js/python.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
