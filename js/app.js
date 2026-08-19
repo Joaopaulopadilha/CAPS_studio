@@ -3,6 +3,20 @@
  * redimensionamento de painéis, modais e barra de status.
  */
 (function () {
+  // O próprio Monaco cancela pedidos de sugestão/hover em andamento quando um
+  // novo pedido os torna obsoletos (ex.: digitando rápido, ou em telas de
+  // toque). Isso é interno da biblioteca e não afeta nada, mas some como um
+  // "Uncaught (in promise) Canceled" no console — só filtra esse ruído.
+  function isCanceledNoise(err) {
+    return !!err && err.message === 'Canceled';
+  }
+  window.addEventListener('unhandledrejection', (e) => {
+    if (isCanceledNoise(e.reason)) e.preventDefault();
+  });
+  window.addEventListener('error', (e) => {
+    if (isCanceledNoise(e.error)) e.preventDefault();
+  });
+
   const state = {
     expanded: new Set(['root']),
     selectedId: null,
@@ -22,6 +36,8 @@
   const el = {};
 
   function cacheEls() {
+    el.appBody = $('#app-body');
+    el.abExplorer = $('#ab-explorer');
     el.tree = $('#file-tree');
     el.tabs = $('#tabs');
     el.monacoContainer = $('#monaco-container');
@@ -148,6 +164,17 @@
     if (e.target.closest && (e.target.closest('#monaco-container') || e.target.closest('#preview-frame'))) return;
     e.preventDefault();
   });
+
+  // Em telas estreitas o explorador vira uma tela cheia (não cabe do lado do
+  // editor), então o ícone da activity bar alterna entre "ver arquivos" e
+  // "ver editor" em vez de só marcar a aba ativa. Sem efeito em telas largas.
+  function toggleMobileSidebar() {
+    el.appBody.classList.toggle('mobile-sidebar-open');
+  }
+
+  function closeMobileSidebar() {
+    el.appBody.classList.remove('mobile-sidebar-open');
+  }
 
   function setupTreeContextMenu() {
     el.tree.addEventListener('contextmenu', (e) => {
@@ -279,6 +306,7 @@
       } else {
         Editor.open(node);
         renderTabs();
+        closeMobileSidebar(); // no celular, escolher um arquivo já volta pro editor
       }
       renderTree();
     });
@@ -362,6 +390,7 @@
   function beginCreate(parentId, type) {
     state.expanded.add(parentId);
     state.creating = { parentId, type };
+    el.appBody.classList.add('mobile-sidebar-open'); // sem efeito em telas largas
     renderTree();
   }
 
@@ -639,6 +668,7 @@
   /* ---------------- Toolbar ---------------- */
 
   function setupToolbar() {
+    el.abExplorer.addEventListener('click', toggleMobileSidebar);
     $('#btn-new-file').addEventListener('click', () => beginCreate(rootOrSelectedFolder(), 'file'));
     $('#btn-new-folder').addEventListener('click', () => beginCreate(rootOrSelectedFolder(), 'folder'));
     $('#side-new-file').addEventListener('click', () => beginCreate(rootOrSelectedFolder(), 'file'));
@@ -750,35 +780,40 @@
   }
 
   function setupResizer(handle, onDrag) {
-    let dragging = false;
+    // Pointer Events cobrem mouse, toque e caneta com o mesmo código — mousedown
+    // sozinho não funciona em celular/tablet (não existe "arrastar com o dedo"
+    // via evento de mouse). setPointerCapture garante que o arraste continua
+    // recebendo eventos mesmo se o ponteiro sair da faixa fina do divisor.
     let lastX = 0;
     let lastY = 0;
-    handle.addEventListener('mousedown', (e) => {
-      dragging = true;
+    handle.addEventListener('pointerdown', (e) => {
+      handle.setPointerCapture(e.pointerId);
       lastX = e.clientX;
       lastY = e.clientY;
       handle.classList.add('dragging');
       document.body.style.cursor = getComputedStyle(handle).cursor;
       // Enquanto arrasta, o iframe do preview não pode "roubar" os eventos de
-      // mouse do documento principal — senão o arraste trava ao passar por cima dele.
+      // ponteiro do documento principal — senão o arraste trava ao passar por cima dele.
       el.previewFrame.style.pointerEvents = 'none';
       e.preventDefault();
     });
-    window.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
+    handle.addEventListener('pointermove', (e) => {
+      if (!handle.hasPointerCapture(e.pointerId)) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
       lastY = e.clientY;
       onDrag(dx, dy);
     });
-    window.addEventListener('mouseup', () => {
-      if (!dragging) return;
-      dragging = false;
+    function endDrag(e) {
+      if (!handle.hasPointerCapture(e.pointerId)) return;
+      handle.releasePointerCapture(e.pointerId);
       handle.classList.remove('dragging');
       document.body.style.cursor = '';
       el.previewFrame.style.pointerEvents = '';
-    });
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
   }
 
   /* ---------------- Boot ---------------- */
@@ -797,6 +832,7 @@
       // ligam o IntelliSense de verdade (sugestões de tags, hover, etc.) pra
       // HTML/CSS/JS/JSON, igual ao VS Code.
       require(['vs/language/html/htmlMode', 'vs/language/css/cssMode', 'vs/language/json/jsonMode', 'vs/language/typescript/tsMode'], () => {});
+      EmbeddedCssIntellisense.init();
 
       Editor.init(el.monacoContainer, { onChange: onEditorChange, onActiveChange: onEditorActiveChange, onSave: saveActiveFile, onRun: () => runPythonFile(Editor.getActiveId()) });
       Preview.init(el.previewFrame);

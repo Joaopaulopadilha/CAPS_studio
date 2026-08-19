@@ -224,6 +224,26 @@ button {
   flex-shrink: 0;
   position: relative;
   z-index: 5;
+  touch-action: none; /* deixa o navegador não tentar rolar a página ao arrastar com o dedo */
+}
+
+/* em telas de toque, a faixa de 4px é fina demais pra pegar com o dedo —
+   aumenta a área clicável sem mudar a largura visual (usa um pseudo-elemento) */
+@media (pointer: coarse) {
+  .resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -8px;
+    right: -8px;
+  }
+  .resizer-horizontal::after {
+    left: 0;
+    right: 0;
+    top: -8px;
+    bottom: -8px;
+  }
 }
 
 .resizer:hover, .resizer.dragging {
@@ -545,3 +565,45 @@ button {
 #toast.hidden { display: none; }
 
 #toast.error { border-color: var(--danger); }
+
+/* ---------- Celular / tela estreita ---------- */
+@media (max-width: 800px) {
+  /* a barra de ferramentas não cabe inteira — em vez de quebrar linha ou
+     cortar botões, deixa rolar horizontalmente */
+  .titlebar-actions {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .titlebar-actions::-webkit-scrollbar { display: none; }
+  .brand { display: none; } /* abre espaço pros botões, que importam mais aqui */
+
+  /* a barra lateral vira uma tela cheia que substitui o editor, em vez de
+     espremer os dois lado a lado numa tela pequena demais pra isso */
+  #sidebar {
+    display: none;
+    width: 100% !important;
+  }
+  #resizer-1 { display: none; }
+  #app-body.mobile-sidebar-open #sidebar { display: flex; }
+  #app-body.mobile-sidebar-open #workbench { display: none; }
+
+  /* visualização e editor empilham em vez de ficar lado a lado */
+  #edit-area { flex-direction: column; }
+  #preview-pane {
+    width: 100% !important;
+    height: 45%;
+    min-height: 160px;
+  }
+  #editor-pane { min-width: 0; }
+  /* nessa orientação empilhada, redimensionar a visualização arrastando a
+     largura não faz sentido — fixa uma altura razoável em vez disso */
+  #resizer-2 { display: none; }
+
+  /* alvos maiores pra tocar com o dedo */
+  .icon-btn { padding: 7px 10px; font-size: 15px; }
+  .tb-btn { padding: 9px 12px; font-size: 13px; }
+  .tree-row { padding-top: 7px; padding-bottom: 7px; }
+  .tab { min-width: 0; padding: 0 8px; }
+  .tab-close { opacity: 0.6; }
+}
