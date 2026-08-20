@@ -123,7 +123,76 @@ const EmbeddedCssIntellisense = (() => {
     ['scroll-behavior', 'Rolagem suave ao navegar pra âncoras'],
   ];
 
+  // Sempre oferecidas além do que a propriedade específica já sugere, pra
+  // Ctrl+Espaço nunca voltar vazio, mesmo numa propriedade sem lista própria.
+  const GLOBAL_VALUES = ['inherit', 'initial', 'unset'];
+
+  const NAMED_COLORS = [
+    'black', 'white', 'red', 'orange', 'yellow', 'green', 'blue', 'purple',
+    'pink', 'gray', 'brown', 'transparent', 'currentColor',
+  ];
+
   const CSS_VALUES = {
+    // Cores
+    color: NAMED_COLORS,
+    'background-color': NAMED_COLORS,
+    'border-color': NAMED_COLORS,
+    'outline-color': NAMED_COLORS,
+    'text-decoration-color': NAMED_COLORS,
+    'caret-color': NAMED_COLORS,
+    'accent-color': NAMED_COLORS,
+    // Tamanhos comuns (largura, altura, espaçamentos)
+    width: ['auto', '100%', 'max-content', 'min-content', 'fit-content'],
+    height: ['auto', '100%', 'max-content', 'min-content', 'fit-content'],
+    'max-width': ['none', '100%', 'max-content', 'fit-content'],
+    'max-height': ['none', '100%', 'max-content', 'fit-content'],
+    'min-width': ['0', '100%', 'max-content', 'fit-content'],
+    'min-height': ['0', '100%', 'max-content', 'fit-content'],
+    margin: ['0', 'auto', '8px', '16px'],
+    padding: ['0', '8px', '16px', '24px'],
+    gap: ['4px', '8px', '16px', '24px'],
+    'row-gap': ['4px', '8px', '16px'],
+    'column-gap': ['4px', '8px', '16px'],
+    top: ['0', 'auto', '50%'],
+    right: ['0', 'auto', '50%'],
+    bottom: ['0', 'auto', '50%'],
+    left: ['0', 'auto', '50%'],
+    'border-radius': ['4px', '8px', '12px', '50%', '9999px'],
+    'border-width': ['1px', '2px', '3px'],
+    'outline-offset': ['2px', '4px'],
+    'z-index': ['0', '1', '10', '100', '999'],
+    opacity: ['1', '0.9', '0.75', '0.5', '0'],
+    'line-height': ['1', '1.2', '1.5', '1.6', 'normal'],
+    'letter-spacing': ['normal', '0.5px', '1px'],
+    'word-spacing': ['normal', '2px'],
+    'text-indent': ['0', '1em', '2em'],
+    'font-size': ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '1rem', '1.5rem'],
+    'font-family': ['system-ui, sans-serif', 'Arial, sans-serif', 'Georgia, serif', '"Courier New", monospace'],
+    // Layout
+    flex: ['1', 'auto', 'none'],
+    'flex-grow': ['0', '1'],
+    'flex-shrink': ['0', '1'],
+    'flex-basis': ['auto', '0', '100px'],
+    'grid-template-columns': ['1fr 1fr', 'repeat(3, 1fr)', 'auto'],
+    'grid-template-rows': ['auto', '1fr 1fr'],
+    'place-items': ['center', 'start', 'end', 'stretch'],
+    'aspect-ratio': ['1 / 1', '16 / 9', '4 / 3'],
+    // Fundo
+    'background-position': ['center', 'top', 'bottom', 'left', 'right'],
+    'background-size': ['cover', 'contain', 'auto'],
+    'background-repeat': ['no-repeat', 'repeat', 'repeat-x', 'repeat-y'],
+    'object-position': ['center', 'top', 'bottom'],
+    // Efeitos
+    'box-shadow': ['0 1px 3px rgba(0,0,0,0.2)', '0 4px 6px rgba(0,0,0,0.1)', 'none'],
+    'text-shadow': ['1px 1px 2px rgba(0,0,0,0.3)', 'none'],
+    transition: ['all 0.2s ease', 'all 0.3s ease-in-out', 'transform 0.2s ease'],
+    transform: ['none', 'scale(1.05)', 'rotate(45deg)', 'translateY(-2px)'],
+    'transform-origin': ['center', 'top left'],
+    filter: ['none', 'blur(4px)', 'grayscale(1)', 'brightness(1.2)'],
+    'backdrop-filter': ['none', 'blur(8px)'],
+    animation: ['spin 1s linear infinite'],
+    'list-style': ['none', 'disc', 'circle', 'decimal'],
+    content: ['""', "' '"],
     display: ['block', 'inline', 'inline-block', 'flex', 'grid', 'none', 'inline-flex'],
     position: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
     'text-align': ['left', 'right', 'center', 'justify'],
@@ -265,7 +334,10 @@ const EmbeddedCssIntellisense = (() => {
         const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
 
         if (ctx.kind === 'value') {
-          const values = CSS_VALUES[ctx.property] || [];
+          // Toda propriedade ganha inherit/initial/unset além da lista própria
+          // (se tiver) — assim Ctrl+Espaço sempre mostra algo, mesmo pras
+          // ~2/3 das propriedades que não têm valores específicos catalogados.
+          const values = (CSS_VALUES[ctx.property] || []).concat(GLOBAL_VALUES);
           return {
             suggestions: values.map((value) => ({
               label: value,

@@ -1,6 +1,5 @@
 :root {
   --bg-titlebar: #323233;
-  --bg-activitybar: #333333;
   --bg-sidebar: #252526;
   --bg-editor: #1e1e1e;
   --bg-tabs: #252526;
@@ -98,30 +97,6 @@ button {
   height: calc(100% - 42px - 22px);
 }
 
-#activitybar {
-  width: 48px;
-  background: var(--bg-activitybar);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 8px;
-  flex-shrink: 0;
-}
-
-.ab-icon {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  padding: 10px;
-  opacity: 0.6;
-  border-left: 2px solid transparent;
-}
-
-.ab-icon.active {
-  opacity: 1;
-  border-left: 2px solid #ffffff;
-}
-
 #sidebar {
   width: 260px;
   min-width: 160px;
@@ -132,6 +107,8 @@ button {
   flex-shrink: 0;
   overflow: hidden;
 }
+
+#sidebar.hidden { display: none; }
 
 .sidebar-header {
   display: flex;
@@ -580,13 +557,9 @@ button {
 
   /* a barra lateral vira uma tela cheia que substitui o editor, em vez de
      espremer os dois lado a lado numa tela pequena demais pra isso */
-  #sidebar {
-    display: none;
-    width: 100% !important;
-  }
+  #sidebar { width: 100% !important; }
   #resizer-1 { display: none; }
-  #app-body.mobile-sidebar-open #sidebar { display: flex; }
-  #app-body.mobile-sidebar-open #workbench { display: none; }
+  #app-body.sidebar-open #workbench { display: none; }
 
   /* visualização e editor empilham em vez de ficar lado a lado */
   #edit-area { flex-direction: column; }

@@ -27,6 +27,7 @@
     previewOpen: false,
     previewEntryId: null, // arquivo .html "fixado" no painel de visualização
     terminalOpen: false,
+    sidebarOpen: true,
   };
 
   const saveTimers = new Map();
@@ -37,7 +38,10 @@
 
   function cacheEls() {
     el.appBody = $('#app-body');
-    el.abExplorer = $('#ab-explorer');
+    el.sidebar = $('#sidebar');
+    el.resizer1 = $('#resizer-1');
+    el.btnToggleSidebar = $('#btn-toggle-sidebar');
+    el.btnFullscreen = $('#btn-fullscreen');
     el.tree = $('#file-tree');
     el.tabs = $('#tabs');
     el.monacoContainer = $('#monaco-container');
@@ -165,16 +169,39 @@
     e.preventDefault();
   });
 
-  // Em telas estreitas o explorador vira uma tela cheia (não cabe do lado do
-  // editor), então o ícone da activity bar alterna entre "ver arquivos" e
-  // "ver editor" em vez de só marcar a aba ativa. Sem efeito em telas largas.
-  function toggleMobileSidebar() {
-    el.appBody.classList.toggle('mobile-sidebar-open');
+  // Mostra/esconde o explorador — libera espaço útil em qualquer tela. Em
+  // telas estreitas ele vira uma tela cheia que substitui o editor (não cabe
+  // dos dois lado a lado), então volta a fechar sozinho ao escolher um arquivo.
+  function isNarrowScreen() {
+    return window.matchMedia('(max-width: 800px)').matches;
+  }
+
+  function setSidebarOpen(open) {
+    state.sidebarOpen = open;
+    el.sidebar.classList.toggle('hidden', !open);
+    el.resizer1.classList.toggle('hidden', !open);
+    el.appBody.classList.toggle('sidebar-open', open);
+  }
+
+  function toggleSidebar() {
+    setSidebarOpen(!state.sidebarOpen);
   }
 
   function closeMobileSidebar() {
-    el.appBody.classList.remove('mobile-sidebar-open');
+    if (isNarrowScreen()) setSidebarOpen(false);
   }
+
+  // Tela cheia real do navegador — útil em tablets, onde a barra de
+  // endereço/abas come uma boa fatia da tela.
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    const isFull = !!document.fullscreenElement;
+    el.btnFullscreen.textContent = isFull ? '⛶ Sair da tela cheia' : '⛶ Tela cheia';
+  });
 
   function setupTreeContextMenu() {
     el.tree.addEventListener('contextmenu', (e) => {
@@ -390,7 +417,7 @@
   function beginCreate(parentId, type) {
     state.expanded.add(parentId);
     state.creating = { parentId, type };
-    el.appBody.classList.add('mobile-sidebar-open'); // sem efeito em telas largas
+    setSidebarOpen(true); // garante que o explorador esteja visível pra mostrar o campo novo
     renderTree();
   }
 
@@ -668,7 +695,8 @@
   /* ---------------- Toolbar ---------------- */
 
   function setupToolbar() {
-    el.abExplorer.addEventListener('click', toggleMobileSidebar);
+    el.btnToggleSidebar.addEventListener('click', toggleSidebar);
+    el.btnFullscreen.addEventListener('click', toggleFullscreen);
     $('#btn-new-file').addEventListener('click', () => beginCreate(rootOrSelectedFolder(), 'file'));
     $('#btn-new-folder').addEventListener('click', () => beginCreate(rootOrSelectedFolder(), 'folder'));
     $('#side-new-file').addEventListener('click', () => beginCreate(rootOrSelectedFolder(), 'file'));
@@ -825,6 +853,7 @@
     setupResizers();
     setupTreeContextMenu();
     setupPythonConsole();
+    setSidebarOpen(!isNarrowScreen()); // começa aberta em telas largas, fechada em celular
 
     require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
     require(['vs/editor/editor.main'], () => {

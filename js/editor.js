@@ -16,14 +16,22 @@ const Editor = (() => {
     'link', 'meta', 'param', 'source', 'track', 'wbr',
   ]);
 
+  // Insere (na posição indicada) a tag de fechamento — ou só o ">" se for um
+  // elemento void — e deixa o cursor logo depois do ">".
+  function insertCloseSequence(lineNumber, column, tagName) {
+    const closeTag = VOID_ELEMENTS.has(tagName.toLowerCase()) ? '' : `</${tagName}>`;
+    autoCloseGuard = true;
+    monacoEditor.executeEdits('auto-close-tag', [{
+      range: { startLineNumber: lineNumber, startColumn: column, endLineNumber: lineNumber, endColumn: column },
+      text: `>${closeTag}`,
+    }]);
+    monacoEditor.setPosition({ lineNumber, column: column + 1 });
+    autoCloseGuard = false;
+  }
+
   // Fecha a tag automaticamente ao digitar ">", igual ao VS Code:
   // <title> vira <title>|</title> com o cursor entre as duas.
-  function maybeAutoCloseTag(model, event) {
-    if (autoCloseGuard) return;
-    if (model.getLanguageId() !== 'html') return;
-    const change = event.changes[event.changes.length - 1];
-    if (!change || change.text !== '>') return;
-
+  function handleTypedCloseBracket(model, change) {
     const lineNumber = change.range.startLineNumber;
     const column = change.range.startColumn + 1; // posição logo após o ">" recém digitado
     const before = model.getLineContent(lineNumber).slice(0, column - 1);
@@ -49,6 +57,36 @@ const Editor = (() => {
     }]);
     monacoEditor.setPosition({ lineNumber, column });
     autoCloseGuard = false;
+  }
+
+  // Aceitar uma sugestão de tag (ex.: escolher "button" na lista) insere só
+  // o nome, de uma vez, sem ">" — diferente de digitar letra por letra, dá
+  // pra reconhecer pelo texto vindo inteiro (mais de 1 caractere) no lugar
+  // de um "<" solto. Completa a tag inteira: <button>|</button>.
+  function handleAcceptedTagSuggestion(model, change) {
+    const tagName = change.text;
+    if (!/^[a-zA-Z][a-zA-Z0-9-]*$/.test(tagName)) return;
+
+    const lineNumber = change.range.startLineNumber;
+    const insertEndColumn = change.range.startColumn + tagName.length;
+    const lineText = model.getLineContent(lineNumber);
+    const before = lineText.slice(0, change.range.startColumn - 1);
+    if (!before.endsWith('<')) return; // só nos importa completar uma tag de abertura
+
+    const after = lineText.slice(insertEndColumn - 1);
+    if (after.startsWith('>') || after.startsWith('/')) return; // já tá fechada ali na frente
+
+    insertCloseSequence(lineNumber, insertEndColumn, tagName);
+  }
+
+  function maybeAutoCloseTag(model, event) {
+    if (autoCloseGuard) return;
+    if (model.getLanguageId() !== 'html') return;
+    const change = event.changes[event.changes.length - 1];
+    if (!change) return;
+
+    if (change.text === '>') handleTypedCloseBracket(model, change);
+    else if (change.text.length > 1) handleAcceptedTagSuggestion(model, change);
   }
 
   function languageFor(name) {
