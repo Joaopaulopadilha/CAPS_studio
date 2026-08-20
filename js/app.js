@@ -636,13 +636,15 @@
     el.pythonConsole.scrollTop = el.pythonConsole.scrollHeight;
   }
 
-  // Mostra um campo de texto embutido no terminal quando o código Python
-  // chama input(), como um terminal de verdade — some ao apertar Enter, e
-  // o que foi digitado fica ecoado como uma linha normal do console.
-  function showTerminalInputPrompt() {
+  // Mostra o prompt e um campo de texto na MESMA linha do terminal, como um
+  // terminal de verdade, quando o código Python chama input(). Ao apertar
+  // Enter, o campo vira texto normal (o valor digitado fica na própria
+  // linha do prompt, igual apareceria num terminal de verdade).
+  function showTerminalInputPrompt(promptText) {
     return new Promise((resolve) => {
       const row = document.createElement('div');
       row.className = 'py-line py-input-row';
+      if (promptText) row.appendChild(document.createTextNode(promptText));
       const input = document.createElement('input');
       input.className = 'py-input';
       input.spellcheck = false;
@@ -654,8 +656,9 @@
       input.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;
         const value = input.value;
-        row.remove();
-        appendConsoleLine('stdout', value);
+        input.remove();
+        row.classList.remove('py-input-row');
+        row.appendChild(document.createTextNode(value));
         resolve(value);
       });
     });

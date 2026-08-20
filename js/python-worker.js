@@ -14,12 +14,10 @@ let pyodideReadyPromise = null;
 let controlView = null;
 let textBuffer = null;
 
-function syncStdin() {
-  if (!controlView) return '';
-  Atomics.store(controlView, 0, 0); // 0 = esperando resposta
-  postMessage({ type: 'input-request' });
+function waitForTypedResponse() {
   Atomics.wait(controlView, 0, 0); // trava aqui até o main thread notificar
   const len = Atomics.load(controlView, 1);
+  Atomics.store(controlView, 0, 0); // reseta pra próxima vez
   // TextDecoder.decode() recusa ler direto de uma view compartilhada —
   // copia pra um buffer comum antes.
   const bytes = new Uint8Array(len);
@@ -27,12 +25,41 @@ function syncStdin() {
   return new TextDecoder().decode(bytes);
 }
 
-function ensurePyodide() {
+// Hook de baixo nível do Pyodide pra stdin (usado por leituras "cruas",
+// tipo sys.stdin.readline() sem passar por input()). Sem acesso ao texto
+// do prompt aqui — quem cobre isso é requestInputSync, abaixo.
+function syncStdin() {
+  if (!controlView) return '';
+  postMessage({ type: 'input-request', prompt: '' });
+  return waitForTypedResponse();
+}
+
+// Chamado direto do Python (troca o builtin input()) já com o texto do
+// prompt em mãos — evita depender do buffer de linha do stdout, que só
+// entrega o prompt pro JS quando aparece uma quebra de linha depois dele
+// (o prompt de input() nunca tem "\n" no fim, então ficaria "preso" até
+// alguma saída posterior liberar, e a pessoa veria o campo sem legenda).
+function requestInputSync(promptText) {
+  if (!controlView) return '';
+  postMessage({ type: 'input-request', prompt: promptText });
+  return waitForTypedResponse();
+}
+
+async function ensurePyodide() {
   if (!pyodideReadyPromise) {
     pyodideReadyPromise = loadPyodide({
       stdout: (text) => postMessage({ type: 'stdout', text }),
       stderr: (text) => postMessage({ type: 'stderr', text }),
       stdin: syncStdin,
+    }).then(async (pyodide) => {
+      pyodide.globals.set('__js_input__', requestInputSync);
+      await pyodide.runPythonAsync(
+        'import builtins\n' +
+        'def _caps_studio_input(prompt=""):\n' +
+        '    return __js_input__(str(prompt))\n' +
+        'builtins.input = _caps_studio_input\n'
+      );
+      return pyodide;
     });
   }
   return pyodideReadyPromise;

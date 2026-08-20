@@ -24,7 +24,7 @@ const PyRunner = (() => {
     if (msg.type === 'stdout' || msg.type === 'stderr') {
       if (onOutputCallback) onOutputCallback(msg.type, msg.text);
     } else if (msg.type === 'input-request') {
-      handleInputRequest();
+      handleInputRequest(msg.prompt || '');
     } else if (msg.type === 'done' || msg.type === 'error') {
       const entry = pending.get(msg.id);
       if (!entry) return;
@@ -34,9 +34,9 @@ const PyRunner = (() => {
     }
   }
 
-  async function handleInputRequest() {
+  async function handleInputRequest(promptText) {
     if (!controlView) return; // sem suporte no navegador; o worker já volta vazio sozinho
-    const text = onInputRequest ? await onInputRequest() : '';
+    const text = onInputRequest ? await onInputRequest(promptText) : '';
     const bytes = new TextEncoder().encode(text ?? '');
     const len = Math.min(bytes.length, textBuffer.byteLength);
     new Uint8Array(textBuffer, 0, len).set(bytes.subarray(0, len));
@@ -62,8 +62,10 @@ const PyRunner = (() => {
     onOutputCallback = onOutput;
   }
 
-  // onInput deve ser uma função () => Promise<string> — chamada toda vez que
-  // o código Python roda um input() e precisa de uma resposta do usuário.
+  // onInput deve ser uma função (promptText) => Promise<string> — chamada
+  // toda vez que o código Python roda um input() e precisa de uma resposta
+  // do usuário. promptText é o texto passado pra input("..."), já pronto
+  // pra mostrar (não depende do buffer de linha do stdout).
   function setInputHandler(onInput) {
     onInputRequest = onInput;
   }
