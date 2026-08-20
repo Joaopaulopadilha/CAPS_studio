@@ -862,6 +862,7 @@
       // HTML/CSS/JS/JSON, igual ao VS Code.
       require(['vs/language/html/htmlMode', 'vs/language/css/cssMode', 'vs/language/json/jsonMode', 'vs/language/typescript/tsMode'], () => {});
       EmbeddedCssIntellisense.init();
+      EmbeddedJsIntellisense.init();
       HtmlIntellisense.init();
 
       Editor.init(el.monacoContainer, { onChange: onEditorChange, onActiveChange: onEditorActiveChange, onSave: saveActiveFile, onRun: () => runPythonFile(Editor.getActiveId()) });
