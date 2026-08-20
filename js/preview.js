@@ -46,6 +46,24 @@ const Preview = (() => {
     return html;
   }
 
+  // Enquanto a pessoa ainda está digitando (ex.: "functio" no meio de
+  // "function"), o script fica momentaneamente inválido. Sem essa checagem,
+  // cada uma dessas pausas recarregaria o iframe com um <script> quebrado,
+  // que erra na hora e polui o console — mesmo o código final estando OK.
+  function hasScriptSyntaxError(html) {
+    const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+    let match;
+    while ((match = re.exec(html))) {
+      if (/\bsrc\s*=/i.test(match[1] || '')) continue; // externo, nada pra checar aqui
+      try {
+        new Function(match[2]);
+      } catch (e) {
+        if (e instanceof SyntaxError) return true;
+      }
+    }
+    return false;
+  }
+
   function pickEntry(preferredId) {
     if (preferredId) {
       const node = VFS.get(preferredId);
@@ -70,6 +88,9 @@ const Preview = (() => {
     }
     currentEntryId = entry.id;
     const finalHtml = inlineHtml(entry);
+    // Código com erro de sintaxe: mantém o preview anterior (válido) em vez
+    // de recarregar com um <script> quebrado que só gera erro no console.
+    if (hasScriptSyntaxError(finalHtml)) return;
     iframe.srcdoc = finalHtml;
   }
 

@@ -566,7 +566,7 @@
     saveTimers.set(fileId, setTimeout(async () => {
       await commitSave(fileId);
       if (state.autoRefresh) refreshPreview();
-    }, 350));
+    }, 600));
   }
 
   function onEditorActiveChange(fileId) {
