@@ -18,15 +18,23 @@ const Editor = (() => {
 
   // Insere (na posição indicada) a tag de fechamento — ou só o ">" se for um
   // elemento void — e deixa o cursor logo depois do ">".
-  function insertCloseSequence(lineNumber, column, tagName) {
+  //
+  // deferCursor: ao aceitar uma sugestão do dropdown (ex.: escolher "script"
+  // na lista), o próprio Monaco reposiciona o cursor pro fim do texto que ELE
+  // inseriu (logo após "script") como parte da própria rotina de aceitar —
+  // isso acontece DEPOIS do nosso onDidChangeContent, então sobrescreve
+  // nosso setPosition se ele rodar na hora. Adiar pro próximo tick resolve.
+  function insertCloseSequence(lineNumber, column, tagName, deferCursor) {
     const closeTag = VOID_ELEMENTS.has(tagName.toLowerCase()) ? '' : `</${tagName}>`;
     autoCloseGuard = true;
     monacoEditor.executeEdits('auto-close-tag', [{
       range: { startLineNumber: lineNumber, startColumn: column, endLineNumber: lineNumber, endColumn: column },
       text: `>${closeTag}`,
     }]);
-    monacoEditor.setPosition({ lineNumber, column: column + 1 });
     autoCloseGuard = false;
+    const placeCursor = () => monacoEditor.setPosition({ lineNumber, column: column + 1 });
+    if (deferCursor) setTimeout(placeCursor, 0);
+    else placeCursor();
   }
 
   // Fecha a tag automaticamente ao digitar ">", igual ao VS Code:
@@ -76,7 +84,7 @@ const Editor = (() => {
     const after = lineText.slice(insertEndColumn - 1);
     if (after.startsWith('>') || after.startsWith('/')) return; // já tá fechada ali na frente
 
-    insertCloseSequence(lineNumber, insertEndColumn, tagName);
+    insertCloseSequence(lineNumber, insertEndColumn, tagName, true);
   }
 
   function maybeAutoCloseTag(model, event) {
