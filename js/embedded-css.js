@@ -127,10 +127,48 @@ const EmbeddedCssIntellisense = (() => {
   // Ctrl+Espaço nunca voltar vazio, mesmo numa propriedade sem lista própria.
   const GLOBAL_VALUES = ['inherit', 'initial', 'unset'];
 
+  // Paleta padrão de cores nomeadas do CSS (as ~148 do spec), + as duas
+  // palavras-chave especiais que sempre andam junto delas.
   const NAMED_COLORS = [
-    'black', 'white', 'red', 'orange', 'yellow', 'green', 'blue', 'purple',
-    'pink', 'gray', 'brown', 'transparent', 'currentColor',
+    'transparent', 'currentColor',
+    'black', 'white', 'gray', 'grey', 'silver', 'dimgray', 'dimgrey',
+    'darkgray', 'darkgrey', 'lightgray', 'lightgrey', 'gainsboro', 'whitesmoke',
+    'red', 'darkred', 'firebrick', 'crimson', 'indianred', 'lightcoral',
+    'salmon', 'darksalmon', 'lightsalmon', 'tomato', 'coral', 'orangered',
+    'orange', 'darkorange', 'gold', 'goldenrod', 'darkgoldenrod',
+    'yellow', 'lightyellow', 'lemonchiffon', 'khaki', 'darkkhaki',
+    'green', 'darkgreen', 'forestgreen', 'seagreen', 'mediumseagreen',
+    'lightgreen', 'palegreen', 'lime', 'limegreen', 'greenyellow',
+    'olive', 'olivedrab', 'darkolivegreen', 'yellowgreen',
+    'teal', 'darkcyan', 'cyan', 'aqua', 'lightcyan', 'turquoise',
+    'mediumturquoise', 'darkturquoise', 'paleturquoise', 'aquamarine',
+    'mediumaquamarine', 'cadetblue',
+    'blue', 'darkblue', 'mediumblue', 'navy', 'midnightblue', 'royalblue',
+    'blueviolet', 'dodgerblue', 'steelblue', 'skyblue', 'lightskyblue',
+    'lightblue', 'powderblue', 'cornflowerblue', 'slateblue', 'mediumslateblue',
+    'darkslateblue',
+    'purple', 'darkviolet', 'darkorchid', 'mediumpurple', 'mediumorchid',
+    'orchid', 'violet', 'plum', 'thistle', 'lavender', 'indigo', 'rebeccapurple',
+    'magenta', 'fuchsia', 'darkmagenta', 'mediumvioletred', 'deeppink',
+    'hotpink', 'palevioletred', 'pink', 'lightpink',
+    'brown', 'saddlebrown', 'sienna', 'chocolate', 'peru', 'sandybrown',
+    'burlywood', 'tan', 'rosybrown', 'wheat', 'navajowhite', 'bisque',
+    'moccasin', 'blanchedalmond', 'papayawhip', 'peachpuff',
+    'ivory', 'beige', 'linen', 'oldlace', 'antiquewhite', 'cornsilk',
+    'seashell', 'mistyrose', 'lavenderblush', 'floralwhite', 'ghostwhite',
+    'aliceblue', 'azure', 'honeydew', 'mintcream', 'snow',
+    'slategray', 'slategrey', 'lightslategray', 'lightslategrey',
+    'lightsteelblue', 'lightgoldenrodyellow', 'darkseagreen', 'lightseagreen',
+    'springgreen', 'mediumspringgreen', 'chartreuse', 'lawngreen', 'deepskyblue',
   ];
+
+  // Presets de tamanho comuns em botões (pequeno / médio / grande) — o
+  // valor mais à esquerda de cada lista é sempre o mais "neutro/médio".
+  const SIZE_PRESETS = ['0', '4px', '8px', '12px', '16px', '24px', '32px', '48px'];
+  const PADDING_PRESETS = ['8px 16px', '10px 20px', '6px 12px', '12px 24px', '4px 8px', '16px 32px', '0'];
+  const RADIUS_PRESETS = ['4px', '6px', '8px', '12px', '16px', '9999px', '50%', '0'];
+  const FONT_SIZE_PRESETS = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '1rem', '1.5rem'];
+  const WIDTH_PRESETS = ['auto', '100%', 'fit-content', 'max-content', 'min-content', '120px', '160px', '200px', '240px'];
 
   const CSS_VALUES = {
     // Cores
@@ -141,24 +179,33 @@ const EmbeddedCssIntellisense = (() => {
     'text-decoration-color': NAMED_COLORS,
     'caret-color': NAMED_COLORS,
     'accent-color': NAMED_COLORS,
-    // Tamanhos comuns (largura, altura, espaçamentos)
-    width: ['auto', '100%', 'max-content', 'min-content', 'fit-content'],
-    height: ['auto', '100%', 'max-content', 'min-content', 'fit-content'],
+    // Tamanhos comuns (largura, altura, espaçamentos) — pensados também
+    // pra botões pequenos/médios/grandes, não só pra caixas em geral.
+    width: WIDTH_PRESETS,
+    height: ['auto', '100%', 'fit-content', 'max-content', 'min-content', '32px', '40px', '48px'],
     'max-width': ['none', '100%', 'max-content', 'fit-content'],
     'max-height': ['none', '100%', 'max-content', 'fit-content'],
-    'min-width': ['0', '100%', 'max-content', 'fit-content'],
-    'min-height': ['0', '100%', 'max-content', 'fit-content'],
-    margin: ['0', 'auto', '8px', '16px'],
-    padding: ['0', '8px', '16px', '24px'],
-    gap: ['4px', '8px', '16px', '24px'],
-    'row-gap': ['4px', '8px', '16px'],
-    'column-gap': ['4px', '8px', '16px'],
+    'min-width': ['0', '80px', '100px', '120px', '100%', 'max-content'],
+    'min-height': ['0', '32px', '40px', '48px', '100%'],
+    margin: ['0', 'auto', ...SIZE_PRESETS],
+    padding: PADDING_PRESETS,
+    'padding-top': SIZE_PRESETS,
+    'padding-right': SIZE_PRESETS,
+    'padding-bottom': SIZE_PRESETS,
+    'padding-left': SIZE_PRESETS,
+    'margin-top': ['0', 'auto', ...SIZE_PRESETS],
+    'margin-right': ['0', 'auto', ...SIZE_PRESETS],
+    'margin-bottom': ['0', 'auto', ...SIZE_PRESETS],
+    'margin-left': ['0', 'auto', ...SIZE_PRESETS],
+    gap: SIZE_PRESETS,
+    'row-gap': SIZE_PRESETS,
+    'column-gap': SIZE_PRESETS,
     top: ['0', 'auto', '50%'],
     right: ['0', 'auto', '50%'],
     bottom: ['0', 'auto', '50%'],
     left: ['0', 'auto', '50%'],
-    'border-radius': ['4px', '8px', '12px', '50%', '9999px'],
-    'border-width': ['1px', '2px', '3px'],
+    'border-radius': RADIUS_PRESETS,
+    'border-width': ['1px', '2px', '3px', '4px'],
     'outline-offset': ['2px', '4px'],
     'z-index': ['0', '1', '10', '100', '999'],
     opacity: ['1', '0.9', '0.75', '0.5', '0'],
@@ -166,7 +213,7 @@ const EmbeddedCssIntellisense = (() => {
     'letter-spacing': ['normal', '0.5px', '1px'],
     'word-spacing': ['normal', '2px'],
     'text-indent': ['0', '1em', '2em'],
-    'font-size': ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '1rem', '1.5rem'],
+    'font-size': FONT_SIZE_PRESETS,
     'font-family': ['system-ui, sans-serif', 'Arial, sans-serif', 'Georgia, serif', '"Courier New", monospace'],
     // Layout
     flex: ['1', 'auto', 'none'],
@@ -299,9 +346,12 @@ const EmbeddedCssIntellisense = (() => {
   function analyzeDeclaration(prefixText) {
     // Olha só a linha atual (até o cursor): cobre tanto "propriedade: valor"
     // quanto várias declarações na mesma linha, sem se confundir com um
-    // ";" de uma declaração anterior ainda não fechada em outra linha.
+    // ";" de uma declaração anterior ainda não fechada em outra linha. O
+    // "{" também conta como fronteira — senão "button { color: |" (seletor
+    // e declaração na mesma linha) confundia tudo com o nome do seletor.
     const lineText = prefixText.slice(prefixText.lastIndexOf('\n') + 1);
-    const statement = lineText.slice(lineText.lastIndexOf(';') + 1);
+    const lastBoundary = Math.max(lineText.lastIndexOf(';'), lineText.lastIndexOf('{'));
+    const statement = lineText.slice(lastBoundary + 1);
     const colonIndex = statement.indexOf(':');
     if (colonIndex === -1) return { kind: 'property' };
     return { kind: 'value', property: statement.slice(0, colonIndex).trim().toLowerCase() };
