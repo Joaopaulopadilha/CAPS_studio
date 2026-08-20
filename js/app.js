@@ -636,6 +636,31 @@
     el.pythonConsole.scrollTop = el.pythonConsole.scrollHeight;
   }
 
+  // Mostra um campo de texto embutido no terminal quando o código Python
+  // chama input(), como um terminal de verdade — some ao apertar Enter, e
+  // o que foi digitado fica ecoado como uma linha normal do console.
+  function showTerminalInputPrompt() {
+    return new Promise((resolve) => {
+      const row = document.createElement('div');
+      row.className = 'py-line py-input-row';
+      const input = document.createElement('input');
+      input.className = 'py-input';
+      input.spellcheck = false;
+      row.appendChild(input);
+      el.pythonConsole.appendChild(row);
+      el.pythonConsole.scrollTop = el.pythonConsole.scrollHeight;
+      input.focus();
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const value = input.value;
+        row.remove();
+        appendConsoleLine('stdout', value);
+        resolve(value);
+      });
+    });
+  }
+
   function setPythonRunning(running) {
     el.btnRunPython.disabled = running;
     el.btnRunPython.classList.toggle('hidden', running);
@@ -684,6 +709,7 @@
     // de verdade na primeira execução (PyRunner.run), pra não pesar o
     // carregamento inicial de quem nem usa Python.
     PyRunner.setOutputHandler((kind, text) => appendConsoleLine(kind, text));
+    PyRunner.setInputHandler(showTerminalInputPrompt);
     el.btnRunPython.addEventListener('click', () => runPythonFile(Editor.getActiveId()));
     el.btnStopPython.addEventListener('click', stopPython);
     el.btnClearConsole.addEventListener('click', () => { el.pythonConsole.innerHTML = ''; });

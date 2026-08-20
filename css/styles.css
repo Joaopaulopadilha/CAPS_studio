@@ -400,6 +400,22 @@ button {
   color: #6a9955;
 }
 
+#python-console .py-input-row {
+  display: flex;
+}
+
+#python-console .py-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #d4d4d4;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+  caret-color: #d4d4d4;
+}
+
 /* ---------- Statusbar ---------- */
 #statusbar {
   height: 22px;
